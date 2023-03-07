@@ -7,7 +7,7 @@ public class TerrainMap : TileMapControler
     private const string TERRAIN_TILEMAP_OBJ_NAME = "TerrainTileMap";
     private Vector2Int mapCellSize = default;
     private Vector2 mapCellGap = default;
-    private List<TerrainControler> allTerrains = default;
+    private List<TerrainController> allTerrains = default;
 
     //! Awake 타임에 초기화 할 내용을 재정의한다.
     public override void InitAwake(MapBoard mapControler_)
@@ -15,7 +15,7 @@ public class TerrainMap : TileMapControler
         this.tileMapObjName = TERRAIN_TILEMAP_OBJ_NAME;
         base.InitAwake(mapControler_);
 
-        allTerrains = new List<TerrainControler>();
+        allTerrains = new List<TerrainController>();
 
         // { 타일의 x축 갯수와 전체 타일의 수로 맵의 가로, 세로 사이즈를 연산한다.
         mapCellSize = Vector2Int.zero;
@@ -69,7 +69,31 @@ public class TerrainMap : TileMapControler
         // } 타일맵의 일부를 일정 확률로 다른 타일로 교체하는 로직
 
         // { 기존에 존재하는 타일의 순서를 조정하고, 컨트롤러를 캐싱하는 로직
+        TerrainController tempTerrain = default;
+        TerrainType terrainType = TerrainType.NONE;
 
+        int loopCnt = 0;
+        foreach (GameObject tile_ in allTileObjs)
+        {
+            tempTerrain = tile_.GetComponentMust<TerrainController>();
+            switch (tempTerrain.name)
+            {
+                case RDefine.TERRAIN_PREF_PLAIN:
+                    terrainType = TerrainType.PLAIN_PASS;
+                    break;
+                case RDefine.TERRAIN_PREF_OCEAN:
+                    terrainType = TerrainType.OCEAN_N_PASS;
+                    break;
+                default:
+                    terrainType = TerrainType.NONE;
+                    break;
+            } // switch : 지형별로 다른 설정을 한다.
+
+            tempTerrain.SetupTerrain(mapController, terrainType, loopCnt);
+            tempTerrain.transform.SetAsFirstSibling();
+            allTerrains.Add(tempTerrain);
+            loopCnt += 1;
+        } // loop : 타일의 이름과 렌더링 순서대로 정렬하는 루프
         // } 기존에 존재하는 타일의 순서를 조정하고, 컨트롤러를 캐싱하는 로직
     } //Start
 
@@ -78,7 +102,7 @@ public class TerrainMap : TileMapControler
     //! 초기화된 타일의 정보로 연산한 타일 사이의 갭을 리턴한다.
     public Vector2 GetCellGap() { return mapCellGap; }
     //! 인덱스에 해당하는 타일을 리턴한다.
-    public TerrainControler GetTile(int tileIdex1D)
+    public TerrainController GetTile(int tileIdex1D)
     {
         if (allTerrains.IsValid(tileIdex1D))
         {
